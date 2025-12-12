@@ -69,7 +69,7 @@ export function generateMockToken(id?: string): TokenData {
     marketCap,
     volume,
     txCount: Math.floor(Math.random() * 2000) + 50,
-    floorPrice: Math.random() * 10,
+    floorPrice: Math.random() * 1,
     
     // Percentage changes
     pctChange1m: (Math.random() - 0.5) * 100,
@@ -94,6 +94,17 @@ export function generateMockToken(id?: string): TokenData {
     // Performance indicators
     performance1h: (Math.random() - 0.5) * 50,
     performance24h: (Math.random() - 0.5) * 100,
+    
+    // Security & holder metrics
+    topHoldersPct: Math.random() * 30 + 5, // 5-35%
+    devHoldersPct: Math.random() * 5, // 0-5%
+    snipersPct: Math.random() * 3, // 0-3%
+    insidersPct: Math.random() * 10, // 0-10%
+    lpBurnedPct: Math.random() > 0.5 ? 100 : Math.random() * 100, // 0-100%
+    
+    // Additional stats
+    userCount: Math.floor(Math.random() * 100) + 1,
+    chartCount: Math.floor(Math.random() * 50) + 1,
     
     // Timestamps
     createdAt: Date.now() - Math.random() * 86400000 * 7, // Random time in last 7 days

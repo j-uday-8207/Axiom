@@ -5,7 +5,7 @@ import { useAppSelector } from '@/store';
 import { Column } from './Column';
 import { TokenData, ColumnType } from '@/types';
 import { cn } from '@/lib/utils';
-import { TokenDetailModal } from './TokenDetailModal';
+import { TokenDetailModal } from '@/components/pulse/TokenDetailModal';
 import { TokenCardSkeleton } from '@/components/ui/skeleton';
 
 interface PulseColumnsProps {
@@ -25,6 +25,38 @@ export const PulseColumns: React.FC<PulseColumnsProps> = ({ onTokenClick }) => {
   const finalStretch = useAppSelector((state) => state.pulseFeed.finalStretch);
   const migrated = useAppSelector((state) => state.pulseFeed.migrated);
   const isLoading = useAppSelector((state) => state.pulseFeed.isLoading);
+  const displaySettings = useAppSelector((state) => state.display);
+
+  // Filter tokens based on display settings
+  const filterTokens = (tokens: TokenData[]): TokenData[] => {
+    return tokens.filter(token => {
+      // Market Cap filter
+      if (displaySettings.settings.marketCapFilter.enabled) {
+        const { min, max } = displaySettings.settings.marketCapFilter;
+        if (token.marketCap < min || token.marketCap > max) {
+          return false;
+        }
+      }
+
+      // Volume filter
+      if (displaySettings.settings.volumeFilter.enabled) {
+        const { min, max } = displaySettings.settings.volumeFilter;
+        if (token.volume < min || token.volume > max) {
+          return false;
+        }
+      }
+
+      // Holders filter
+      if (displaySettings.settings.holdersFilter.enabled) {
+        const { min, max } = displaySettings.settings.holdersFilter;
+        if (token.holders < min || token.holders > max) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  };
 
   const handleTokenClick = (token: TokenData) => {
     setSelectedToken(token);
@@ -34,15 +66,20 @@ export const PulseColumns: React.FC<PulseColumnsProps> = ({ onTokenClick }) => {
     }
   };
 
-  const columns: Array<{
+  const allColumns: Array<{
     id: ColumnType;
     title: string;
     tokens: TokenData[];
   }> = [
-    { id: 'newPairs', title: 'New Pairs', tokens: newPairs },
-    { id: 'finalStretch', title: 'Final Stretch', tokens: finalStretch },
-    { id: 'migrated', title: 'Migrated', tokens: migrated },
+    { id: 'newPairs', title: 'New Pairs', tokens: filterTokens(newPairs) },
+    { id: 'finalStretch', title: 'Final Stretch', tokens: filterTokens(finalStretch) },
+    { id: 'migrated', title: 'Migrated', tokens: filterTokens(migrated) },
   ];
+
+  // Filter columns based on visibility settings
+  const columns = allColumns.filter(column => 
+    displaySettings.settings.visibleColumns.includes(column.id)
+  );
 
   if (isLoading) {
     return (
@@ -84,9 +121,9 @@ export const PulseColumns: React.FC<PulseColumnsProps> = ({ onTokenClick }) => {
       </div>
 
       {/* Desktop: Three Columns Side-by-Side */}
-      <div className="hidden md:grid md:grid-cols-3 gap-4 h-[calc(100vh-200px)]">
+      <div className="hidden md:grid md:grid-cols-3 gap-4 h-full px-4 py-4">
         {columns.map((column) => (
-          <div key={column.id} className="bg-slate-900/50 rounded-lg p-4">
+          <div key={column.id} className="bg-slate-900/50 rounded-lg overflow-hidden flex flex-col">
             <Column
               title={column.title}
               tokens={column.tokens}

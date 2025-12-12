@@ -6,8 +6,11 @@ import { store } from '@/store';
 import { setTokens } from '@/store/slices/pulseFeedSlice';
 import { INITIAL_MOCK_DATA } from '@/lib/mockData';
 import { PulseColumns } from '@/components/pulse/PulseColumns';
+import { PulseNavigation } from '@/components/navigation/PulseNavigation';
+import { ColumnHeaderNav } from '@/components/navigation/ColumnHeaderNav';
 import { useTokenSocket } from '@/hooks/useTokenSocket';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { Toaster } from '@/components/ui/toaster';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ReactQueryProvider } from '@/components/providers/ReactQueryProvider';
 
@@ -15,6 +18,8 @@ import { ReactQueryProvider } from '@/components/providers/ReactQueryProvider';
  * Inner component that uses Redux hooks
  */
 const PulsePageContent: React.FC = () => {
+  const displaySettings = store.getState().display.settings;
+  
   // Initialize the WebSocket simulation
   useTokenSocket({
     enabled: true,
@@ -23,37 +28,20 @@ const PulsePageContent: React.FC = () => {
   });
 
   return (
-    <div className="min-h-screen bg-background text-white">
-      {/* Header */}
-      <header className="border-b border-slate-800">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-accent to-info bg-clip-text text-transparent">
-                Pulse
-              </h1>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-success rounded-full animate-pulse" />
-                <span className="text-sm text-gray-400">Live</span>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <select className="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm border border-slate-700 focus:outline-none focus:border-accent">
-                <option>SOL</option>
-                <option>ETH</option>
-                <option>BTC</option>
-              </select>
-              <button className="px-4 py-2 bg-accent hover:bg-accent/80 text-black font-medium rounded-lg text-sm transition-colors">
-                Deposit
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="h-screen bg-background text-white flex flex-col overflow-hidden">
+      {/* Navigation */}
+      <PulseNavigation />
+
+      {/* Search Bar (conditionally hidden) */}
+      {!displaySettings.hideSearchBar && (
+        <ColumnHeaderNav 
+          searchPlaceholder="Search by ticker or name"
+          onSearch={(query) => console.log('Search:', query)}
+        />
+      )}
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-6">
+      <main className="flex-1 overflow-hidden">
         <PulseColumns
           onTokenClick={(token) => {
             console.log('Token clicked:', token);
@@ -99,6 +87,7 @@ export default function PulsePage() {
         <Provider store={store}>
           <TooltipProvider delayDuration={200}>
             <PulsePageContent />
+            <Toaster />
           </TooltipProvider>
         </Provider>
       </ReactQueryProvider>

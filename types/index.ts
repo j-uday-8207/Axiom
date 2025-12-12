@@ -15,7 +15,7 @@ export interface TokenData {
   marketCap: number;
   volume: number;
   txCount: number;
-  floorPrice?: number;
+  floorPrice: number;
   
   // Percentage changes
   pctChange1m: number;
@@ -40,6 +40,17 @@ export interface TokenData {
   // Performance indicators
   performance1h: number;
   performance24h: number;
+  
+  // Security & holder metrics (shown at bottom of card)
+  topHoldersPct: number; // Top holders percentage
+  devHoldersPct: number; // Developer holdings percentage
+  snipersPct: number; // Snipers percentage
+  insidersPct: number; // Insiders percentage
+  lpBurnedPct: number; // LP burned percentage
+  
+  // Additional stats
+  userCount: number; // Number of users/traders
+  chartCount: number; // Chart views or some metric
   
   // Timestamps
   createdAt: number;
