@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Provider } from 'react-redux';
 import { store } from '@/store';
 import { setTokens } from '@/store/slices/pulseFeedSlice';
@@ -9,6 +9,7 @@ import { PulseColumns } from '@/components/pulse/PulseColumns';
 import { PulseNavigation } from '@/components/navigation/PulseNavigation';
 import { ColumnHeaderNav } from '@/components/navigation/ColumnHeaderNav';
 import { useTokenSocket } from '@/hooks/useTokenSocket';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/toaster';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -19,12 +20,22 @@ import { ReactQueryProvider } from '@/components/providers/ReactQueryProvider';
  */
 const PulsePageContent: React.FC = () => {
   const displaySettings = store.getState().display.settings;
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [portfolioOpen, setPortfolioOpen] = useState(false);
+  const [exchangeOpen, setExchangeOpen] = useState(false);
   
   // Initialize the WebSocket simulation
   useTokenSocket({
     enabled: true,
     updateInterval: 200,
     tokensPerUpdate: 5,
+  });
+
+  // Initialize keyboard shortcuts
+  useKeyboardShortcuts({
+    onOpenSettings: () => setSettingsOpen(true),
+    onOpenPortfolio: () => setPortfolioOpen(true),
+    onOpenExchange: () => setExchangeOpen(true),
   });
 
   return (

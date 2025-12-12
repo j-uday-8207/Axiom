@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { updateMultipleTokens } from '@/store/slices/pulseFeedSlice';
+import { updateTokenPrice } from '@/store/slices/portfolioSlice';
 import { ColumnType, TokenUpdatePayload } from '@/types';
 import { generateRandomUpdate } from '@/lib/mockData';
 
@@ -29,6 +30,7 @@ export const useTokenSocket = (options: UseTokenSocketOptions = {}) => {
   const newPairs = useAppSelector((state) => state.pulseFeed.newPairs);
   const finalStretch = useAppSelector((state) => state.pulseFeed.finalStretch);
   const migrated = useAppSelector((state) => state.pulseFeed.migrated);
+  const portfolioPositions = useAppSelector((state) => state.portfolio.positions);
 
   /**
    * Select random tokens from all columns and update them
@@ -66,8 +68,19 @@ export const useTokenSocket = (options: UseTokenSocketOptions = {}) => {
 
     if (tokensToUpdate.length > 0) {
       dispatch(updateMultipleTokens(tokensToUpdate));
+      
+      // Update portfolio prices for tokens we own
+      tokensToUpdate.forEach(({ id, updates }) => {
+        if (portfolioPositions[id] && updates.marketCap !== undefined) {
+          const priceInSOL = updates.marketCap / 1000;
+          dispatch(updateTokenPrice({
+            tokenId: id,
+            currentPrice: priceInSOL,
+          }));
+        }
+      });
     }
-  }, [newPairs, finalStretch, migrated, tokensPerUpdate, dispatch]);
+  }, [newPairs, finalStretch, migrated, portfolioPositions, tokensPerUpdate, dispatch]);
 
   /**
    * Start the update interval

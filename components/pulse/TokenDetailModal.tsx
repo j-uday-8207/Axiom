@@ -33,6 +33,8 @@ import {
 import { useAppSelector, useAppDispatch } from '@/store';
 import { buyToken, sellToken } from '@/store/slices/portfolioSlice';
 import { deductFunds, addFunds } from '@/store/slices/walletSlice';
+import { setTokenNote } from '@/store/slices/notesSlice';
+import { addTransaction } from '@/store/slices/transactionSlice';
 import { toast } from '@/hooks/use-toast';
 
 interface TokenDetailModalProps {
@@ -59,10 +61,12 @@ export const TokenDetailModal: React.FC<TokenDetailModalProps> = ({
   const [chartData, setChartData] = useState<CandlestickData[]>([]);
   const [priceFlash, setPriceFlash] = useState<'up' | 'down' | null>(null);
   const [imageError, setImageError] = useState(false);
+  const [noteText, setNoteText] = useState('');
 
   // Redux selectors
   const solBalance = useAppSelector((state) => state.wallet.solBalance);
   const position = useAppSelector((state) => token ? state.portfolio.positions[token.id] : null);
+  const savedNote = useAppSelector((state) => token ? state.notes.tokenNotes[token.id] || '' : '');
 
   // Initialize chart data
   useEffect(() => {
@@ -121,6 +125,21 @@ export const TokenDetailModal: React.FC<TokenDetailModalProps> = ({
   const trades = useMemo(() => generateMockTrades(20), []);
   const presetAmounts = ['0.1', '0.5', '1.0', '5.0'];
 
+  // Load saved note when modal opens or token changes
+  useEffect(() => {
+    setNoteText(savedNote);
+  }, [savedNote, token]);
+
+  // Save note to Redux on blur
+  const handleSaveNote = () => {
+    if (!token) return;
+    dispatch(setTokenNote({ tokenId: token.id, note: noteText }));
+    toast({
+      title: "Note Saved",
+      description: "Your note has been saved",
+    });
+  };
+
   // Buy/Sell Handlers
   const handleTrade = () => {
     if (!token) return;
@@ -158,6 +177,15 @@ export const TokenDetailModal: React.FC<TokenDetailModalProps> = ({
         pricePerToken: priceInSOL,
         imageUrl: token.imageUrl,
       }));
+      dispatch(addTransaction({
+        type: 'buy',
+        tokenId: token.id,
+        tokenName: token.name,
+        tokenTicker: token.ticker,
+        quantity: qty,
+        pricePerToken: priceInSOL,
+        totalValue: totalCost,
+      }));
 
       toast({
         title: "Purchase Successful",
@@ -181,6 +209,15 @@ export const TokenDetailModal: React.FC<TokenDetailModalProps> = ({
         tokenId: token.id,
         quantity: qty,
         pricePerToken: priceInSOL,
+      }));
+      dispatch(addTransaction({
+        type: 'sell',
+        tokenId: token.id,
+        tokenName: token.name,
+        tokenTicker: token.ticker,
+        quantity: qty,
+        pricePerToken: priceInSOL,
+        totalValue: saleValue,
       }));
 
       toast({
@@ -673,6 +710,22 @@ export const TokenDetailModal: React.FC<TokenDetailModalProps> = ({
                   Sell All {position.quantity} {token.ticker}
                 </button>
               )}
+
+              {/* Notes Section */}
+              <div className="pt-3 border-t border-slate-800">
+                <div className="text-sm font-semibold text-white mb-2">Notes</div>
+                <textarea
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value)}
+                  onBlur={handleSaveNote}
+                  placeholder="Add notes about this token..."
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  rows={3}
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  Auto-saves on blur
+                </div>
+              </div>
 
               {/* Presets */}
               <div className="flex items-center gap-2 pt-3 border-t border-slate-800">

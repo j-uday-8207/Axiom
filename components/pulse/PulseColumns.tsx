@@ -30,10 +30,21 @@ export const PulseColumns: React.FC<PulseColumnsProps> = ({ onTokenClick }) => {
   const bookmarkedTokenIds = useAppSelector((state) => state.bookmarks.bookmarkedTokenIds);
   const viewMode = useAppSelector((state) => state.display.settings.viewMode);
   const showBookmarkedOnly = useAppSelector((state) => state.display.settings.showBookmarkedOnly);
+  const searchQuery = useAppSelector((state) => state.search.query);
 
-  // Filter tokens based on display settings
+  // Filter tokens based on display settings and search
   const filterTokens = (tokens: TokenData[]): TokenData[] => {
     return tokens.filter(token => {
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesTicker = token.ticker.toLowerCase().includes(query);
+        const matchesName = token.name.toLowerCase().includes(query);
+        if (!matchesTicker && !matchesName) {
+          return false;
+        }
+      }
+
       // Bookmark filter
       if (showBookmarkedOnly && !bookmarkedTokenIds.includes(token.id)) {
         return false;

@@ -6,8 +6,12 @@ import { ProfileModal } from '@/components/ui/ProfileModal';
 import { SettingsModal } from '@/components/ui/SettingsModal';
 import { ExchangeModal } from '@/components/ui/ExchangeModal';
 import { PortfolioModal } from '@/components/ui/PortfolioModal';
+import { TransactionHistoryModal } from '@/components/ui/TransactionHistoryModal';
+import { PriceAlertsModal } from '@/components/ui/PriceAlertsModal';
+import { PortfolioAnalyticsModal } from '@/components/ui/PortfolioAnalyticsModal';
 import { useAppSelector, useAppDispatch } from '@/store';
 import { toggleShowBookmarkedOnly, setViewMode } from '@/store/slices/displaySlice';
+import { toggleTheme } from '@/store/slices/themeSlice';
 import { toast } from '@/hooks/use-toast';
 import {
   HelpCircle,
@@ -22,6 +26,11 @@ import {
   Columns3,
   Wallet,
   Package,
+  Sun,
+  Moon,
+  Clock,
+  Bell,
+  BarChart3,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -31,12 +40,19 @@ export const PulseNavigation: React.FC = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [exchangeOpen, setExchangeOpen] = useState(false);
   const [portfolioOpen, setPortfolioOpen] = useState(false);
+  const [transactionsOpen, setTransactionsOpen] = useState(false);
+  const [alertsOpen, setAlertsOpen] = useState(false);
+  const [analyticsOpen, setAnalyticsOpen] = useState(false);
   
   const bookmarkCount = useAppSelector((state) => state.bookmarks.bookmarkedTokenIds.length);
   const showBookmarkedOnly = useAppSelector((state) => state.display.settings.showBookmarkedOnly);
   const viewMode = useAppSelector((state) => state.display.settings.viewMode);
   const solBalance = useAppSelector((state) => state.wallet.solBalance);
   const positionCount = useAppSelector((state) => Object.keys(state.portfolio.positions).length);
+  const theme = useAppSelector((state) => state.theme.mode);
+  const activeAlertsCount = useAppSelector((state) => 
+    state.alerts.alerts.filter(a => a.isActive).length
+  );
 
   const toggleBookmarkFilter = () => {
     dispatch(toggleShowBookmarkedOnly());
@@ -54,6 +70,14 @@ export const PulseNavigation: React.FC = () => {
     toast({
       title: `View Mode: ${newMode === 'column' ? 'Column' : 'Grid'}`,
       description: `Switched to ${newMode} view`,
+    });
+  };
+
+  const handleToggleTheme = () => {
+    dispatch(toggleTheme());
+    toast({
+      title: `Theme: ${theme === 'dark' ? 'Light' : 'Dark'}`,
+      description: `Switched to ${theme === 'dark' ? 'light' : 'dark'} mode`,
     });
   };
 
@@ -117,6 +141,47 @@ export const PulseNavigation: React.FC = () => {
           )}
         </button>
 
+        <button 
+          onClick={handleToggleTheme}
+          className="p-2 text-gray-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+          title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+        >
+          {theme === 'dark' ? (
+            <Sun className="w-5 h-5" />
+          ) : (
+            <Moon className="w-5 h-5" />
+          )}
+        </button>
+
+        <button 
+          onClick={() => setTransactionsOpen(true)}
+          className="p-2 text-gray-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+          title="Transaction history"
+        >
+          <Clock className="w-5 h-5" />
+        </button>
+
+        <button 
+          onClick={() => setAlertsOpen(true)}
+          className="relative p-2 text-gray-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+          title="Price alerts"
+        >
+          <Bell className="w-5 h-5" />
+          {activeAlertsCount > 0 && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 text-black text-xs font-bold rounded-full flex items-center justify-center">
+              {activeAlertsCount}
+            </span>
+          )}
+        </button>
+
+        <button 
+          onClick={() => setAnalyticsOpen(true)}
+          className="p-2 text-gray-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+          title="Portfolio analytics"
+        >
+          <BarChart3 className="w-5 h-5" />
+        </button>
+
         <button className="p-2 text-gray-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
           <Volume2 className="w-5 h-5" />
         </button>
@@ -171,6 +236,9 @@ export const PulseNavigation: React.FC = () => {
       <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
       <ExchangeModal open={exchangeOpen} onOpenChange={setExchangeOpen} />
       <PortfolioModal open={portfolioOpen} onOpenChange={setPortfolioOpen} />
+      <TransactionHistoryModal open={transactionsOpen} onOpenChange={setTransactionsOpen} />
+      <PriceAlertsModal open={alertsOpen} onOpenChange={setAlertsOpen} />
+      <PortfolioAnalyticsModal open={analyticsOpen} onOpenChange={setAnalyticsOpen} />
     </nav>
   );
 };

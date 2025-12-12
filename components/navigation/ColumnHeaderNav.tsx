@@ -1,7 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Search, Plus, Filter, Settings } from 'lucide-react';
+import { Search, Plus, Filter, Settings, X } from 'lucide-react';
+import { useAppSelector, useAppDispatch } from '@/store';
+import { setSearchQuery, clearSearch } from '@/store/slices/searchSlice';
 
 interface ColumnHeaderNavProps {
   searchPlaceholder?: string;
@@ -12,6 +14,20 @@ export const ColumnHeaderNav: React.FC<ColumnHeaderNavProps> = ({
   searchPlaceholder = 'Search by ticker or name',
   onSearch,
 }) => {
+  const dispatch = useAppDispatch();
+  const searchQuery = useAppSelector((state) => state.search.query);
+  const isSearchActive = useAppSelector((state) => state.search.isActive);
+
+  const handleSearchChange = (query: string) => {
+    dispatch(setSearchQuery(query));
+    onSearch?.(query);
+  };
+
+  const handleClearSearch = () => {
+    dispatch(clearSearch());
+    onSearch?.('');
+  };
+
   return (
     <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900/30">
       {/* Left Side - Column Tabs */}
@@ -42,10 +58,24 @@ export const ColumnHeaderNav: React.FC<ColumnHeaderNavProps> = ({
           <input
             type="text"
             placeholder={searchPlaceholder}
-            onChange={(e) => onSearch?.(e.target.value)}
-            className="w-full bg-slate-800/50 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent focus:bg-slate-800"
+            value={searchQuery}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            className="w-full bg-slate-800/50 border border-slate-700 rounded-lg pl-10 pr-10 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent focus:bg-slate-800"
           />
+          {isSearchActive && (
+            <button
+              onClick={handleClearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-700 rounded transition-colors"
+            >
+              <X className="w-3 h-3 text-gray-400 hover:text-white" />
+            </button>
+          )}
         </div>
+        {isSearchActive && (
+          <div className="text-xs text-gray-400 mt-1">
+            Press <kbd className="px-1 py-0.5 bg-slate-700 rounded text-xs">ESC</kbd> to clear
+          </div>
+        )}
       </div>
 
       {/* Right Side - Actions */}
