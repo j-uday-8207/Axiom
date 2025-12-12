@@ -144,6 +144,10 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                       src={token.imageUrl}
                       alt={token.ticker}
                       className="w-10 h-10 rounded-full"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = `https://ui-avatars.com/api/?name=${token.ticker}&background=3b82f6&color=fff&size=128&bold=true&rounded=true`;
+                      }}
                     />
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-sm truncate">{token.ticker}</div>

@@ -17,20 +17,34 @@ const FULL_NAMES = [
 ];
 
 /**
- * Generate SVG avatar data URI
+ * Generate a variety of crypto-themed avatar URLs
+ * Using only reliable, CORS-friendly services
  */
-function generateAvatarDataUri(letter: string, bgColor: string): string {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
-    <rect width="48" height="48" fill="${bgColor}" rx="8"/>
-    <text x="24" y="32" font-family="Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="middle" fill="white">${letter}</text>
-  </svg>`;
-  return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+function getRandomTokenImage(ticker: string, index: number): string {
+  const colors = ['22c55e', '3b82f6', 'ef4444', 'f59e0b', '8b5cf6', 'ec4899', '06b6d4', '10b981'];
+  const color = colors[index % colors.length];
+  
+  const imageTypes = [
+    // DiceBear avatars - highly reliable
+    `https://api.dicebear.com/7.x/bottts/svg?seed=${ticker}&backgroundColor=${color}`,
+    `https://api.dicebear.com/7.x/shapes/svg?seed=${ticker}&backgroundColor=${color}`,
+    `https://api.dicebear.com/7.x/identicon/svg?seed=${ticker}&backgroundColor=${color}`,
+    `https://api.dicebear.com/7.x/rings/svg?seed=${ticker}`,
+    `https://api.dicebear.com/7.x/pixels/svg?seed=${ticker}`,
+    // Boring Avatars - very reliable
+    `https://source.boringavatars.com/marble/120/${ticker}?colors=264653,2a9d8f,e9c46a,f4a261,e76f51`,
+    `https://source.boringavatars.com/beam/120/${ticker}?colors=22c55e,3b82f6,ef4444,f59e0b,8b5cf6`,
+    `https://source.boringavatars.com/bauhaus/120/${ticker}?colors=06b6d4,10b981,ec4899,f59e0b,8b5cf6`,
+    `https://source.boringavatars.com/ring/120/${ticker}?colors=22c55e,3b82f6,ef4444,f59e0b,8b5cf6`,
+    // UI Avatars - very reliable
+    `https://ui-avatars.com/api/?name=${ticker}&background=${color}&color=fff&size=128&bold=true&rounded=true`,
+  ];
+  
+  return imageTypes[index % imageTypes.length];
 }
 
-const COLORS = ['#22c55e', '#3b82f6', '#ef4444', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#10b981'];
-
 const IMAGE_PLACEHOLDERS = TOKEN_NAMES.map((name, index) => 
-  generateAvatarDataUri(name.charAt(0), COLORS[index % COLORS.length])
+  getRandomTokenImage(name, index)
 );
 
 /**

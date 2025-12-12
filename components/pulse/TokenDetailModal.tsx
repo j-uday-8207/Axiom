@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { TokenData } from '@/types';
 import {
   Dialog,
@@ -51,12 +51,62 @@ export const TokenDetailModal: React.FC<TokenDetailModalProps> = ({
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
   const [amount, setAmount] = useState('');
   const [chartInterval, setChartInterval] = useState<ChartInterval>('1s');
+  const [chartData, setChartData] = useState<CandlestickData[]>([]);
+  const [priceFlash, setPriceFlash] = useState<'up' | 'down' | null>(null);
+  const [imageError, setImageError] = useState(false);
 
-  // Generate mock data
-  const chartData = useMemo(() => {
-    if (!token) return [];
-    return generateMockChartData(token.marketCap / 1000000, 100);
+  // Initialize chart data
+  useEffect(() => {
+    if (!token) return;
+    setChartData(generateMockChartData(token.marketCap / 1000000, 100));
   }, [token]);
+
+  // Update chart data dynamically every 2 seconds
+  useEffect(() => {
+    if (!token || !isOpen) return;
+
+    const interval = setInterval(() => {
+      setChartData(prevData => {
+        if (prevData.length === 0) return prevData;
+
+        // Remove oldest data point and add new one
+        const newData = [...prevData.slice(1)];
+        const lastCandle = prevData[prevData.length - 1];
+        const now = Date.now();
+        
+        // Generate new candle based on last close price
+        const volatility = 0.015; // 1.5% volatility
+        const change = (Math.random() - 0.48) * volatility * lastCandle.close; // Slight upward bias
+        
+        const open = lastCandle.close;
+        const close = open + change;
+        const high = Math.max(open, close) * (1 + Math.random() * 0.008);
+        const low = Math.min(open, close) * (1 - Math.random() * 0.008);
+        const volume = Math.random() * 150000 + 20000;
+
+        // Trigger price flash animation
+        if (change > 0) {
+          setPriceFlash('up');
+        } else if (change < 0) {
+          setPriceFlash('down');
+        }
+        setTimeout(() => setPriceFlash(null), 500);
+
+        newData.push({
+          time: now,
+          open,
+          high,
+          low,
+          close,
+          volume,
+        });
+
+        return newData;
+      });
+    }, 2000); // Update every 2 seconds
+
+    return () => clearInterval(interval);
+  }, [token, isOpen]);
 
   const holders = useMemo(() => generateMockHolders(10), []);
   const trades = useMemo(() => generateMockTrades(20), []);
@@ -68,8 +118,16 @@ export const TokenDetailModal: React.FC<TokenDetailModalProps> = ({
   };
 
   const presetAmounts = ['0.01', '0.1', '1', '10'];
-  const currentPrice = token.marketCap / 1000000;
-  const priceChange = token.pctChange1h;
+  
+  // Use live chart data for current price if available
+  const currentPrice = chartData.length > 0 
+    ? chartData[chartData.length - 1].close 
+    : token.marketCap / 1000000;
+    
+  // Calculate price change from first to last candle
+  const priceChange = chartData.length > 1
+    ? ((chartData[chartData.length - 1].close - chartData[0].open) / chartData[0].open) * 100
+    : token.pctChange1h;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -78,11 +136,18 @@ export const TokenDetailModal: React.FC<TokenDetailModalProps> = ({
         <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
           {/* Left: Token Info */}
           <div className="flex items-center gap-4">
-            <img
-              src={token.imageUrl}
-              alt={token.name}
-              className="w-10 h-10 rounded-lg"
-            />
+            {imageError ? (
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
+                {token.ticker.charAt(0)}
+              </div>
+            ) : (
+              <img
+                src={token.imageUrl}
+                alt={token.name}
+                className="w-10 h-10 rounded-lg"
+                onError={() => setImageError(true)}
+              />
+            )}
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <h2 className="text-lg font-bold text-white">{token.ticker}</h2>
@@ -113,7 +178,13 @@ export const TokenDetailModal: React.FC<TokenDetailModalProps> = ({
               </div>
               <div>
                 <div className="text-xs text-gray-500">Price</div>
-                <div className="text-sm font-semibold text-white">${currentPrice.toFixed(2)}</div>
+                <div className={cn(
+                  "text-sm font-semibold text-white transition-all duration-300",
+                  priceFlash === 'up' && "text-green-400 scale-110",
+                  priceFlash === 'down' && "text-red-400 scale-110"
+                )}>
+                  ${currentPrice.toFixed(2)}
+                </div>
               </div>
               <div>
                 <div className="text-xs text-gray-500">Liquidity</div>
@@ -203,6 +274,11 @@ export const TokenDetailModal: React.FC<TokenDetailModalProps> = ({
 
             {/* Chart Canvas */}
             <div className="flex-1 relative p-4">
+              {/* LIVE Indicator */}
+              <div className="absolute top-6 right-6 z-10 flex items-center gap-2 px-3 py-1.5 bg-slate-900/90 backdrop-blur-sm rounded-full border border-slate-700">
+                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                <span className="text-xs font-semibold text-white uppercase tracking-wider">Live</span>
+              </div>
               <MockCandlestickChart data={chartData} />
             </div>
 
@@ -550,7 +626,7 @@ const MockCandlestickChart: React.FC<{ data: CandlestickData[] }> = ({ data }) =
           const color = isGreen ? '#22c55e' : '#ef4444';
           
           return (
-            <g key={i}>
+            <g key={i} style={{ transition: 'all 0.3s ease-in-out' }}>
               {/* Wick */}
               <line
                 x1={`${x + width / 2}%`}
@@ -559,6 +635,7 @@ const MockCandlestickChart: React.FC<{ data: CandlestickData[] }> = ({ data }) =
                 y2={`${lowY}%`}
                 stroke={color}
                 strokeWidth="1"
+                style={{ transition: 'all 0.3s ease-in-out' }}
               />
               {/* Body */}
               <rect
@@ -567,10 +644,26 @@ const MockCandlestickChart: React.FC<{ data: CandlestickData[] }> = ({ data }) =
                 width={`${width}%`}
                 height={`${Math.abs(closeY - openY) || 0.5}%`}
                 fill={color}
+                style={{ transition: 'all 0.3s ease-in-out' }}
               />
             </g>
           );
         })}
+      </svg>
+      
+      {/* Animated price line overlay showing latest trend */}
+      <svg width="100%" height="100%" className="absolute inset-0 pointer-events-none">
+        <polyline
+          points={data.map((candle, i) => {
+            const x = ((i / data.length) * 100) + ((1 / data.length) * 40);
+            const y = ((maxPrice - candle.close) / priceRange) * 100;
+            return `${x}%,${y}%`;
+          }).join(' ')}
+          fill="none"
+          stroke="rgba(34, 197, 94, 0.3)"
+          strokeWidth="2"
+          style={{ transition: 'all 0.3s ease-in-out' }}
+        />
       </svg>
     </div>
   );

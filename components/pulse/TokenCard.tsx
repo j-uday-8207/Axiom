@@ -37,6 +37,7 @@ interface TokenCardProps {
 export const TokenCard = memo<TokenCardProps>(({ token, onCardClick }) => {
   const [priceFlash, setPriceFlash] = useState<'up' | 'down' | null>(null);
   const [prevMarketCap, setPrevMarketCap] = useState(token.marketCap);
+  const [imageError, setImageError] = useState(false);
   
   // Get display settings and bookmarks from Redux
   const dispatch = useAppDispatch();
@@ -134,12 +135,23 @@ export const TokenCard = memo<TokenCardProps>(({ token, onCardClick }) => {
             displaySettings.squareImages ? 'rounded-lg' : 'rounded-full',
             token.isOnline && 'ring-2 ring-success/50'
           )}>
-            <img
-              src={token.imageUrl}
-              alt={token.name}
-              className="w-full h-full object-cover"
-              loading="lazy"
-            />
+            {imageError ? (
+              <div className={cn(
+                'w-full h-full flex items-center justify-center text-2xl font-bold text-white',
+                displaySettings.squareImages ? 'rounded-lg' : 'rounded-full',
+                'bg-gradient-to-br from-blue-500 to-purple-600'
+              )}>
+                {token.ticker.charAt(0)}
+              </div>
+            ) : (
+              <img
+                src={token.imageUrl}
+                alt={token.name}
+                className="w-full h-full object-cover"
+                loading="lazy"
+                onError={() => setImageError(true)}
+              />
+            )}
           </div>
           {token.isPaid && (
             <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-success rounded-full flex items-center justify-center">
