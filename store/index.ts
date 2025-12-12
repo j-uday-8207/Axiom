@@ -3,12 +3,14 @@ import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import pulseFeedReducer from './slices/pulseFeedSlice';
 import displayReducer from './slices/displaySlice';
 import bookmarksReducer from './slices/bookmarksSlice';
+import walletReducer from './slices/walletSlice';
 
 export const store = configureStore({
   reducer: {
     pulseFeed: pulseFeedReducer,
     display: displayReducer,
     bookmarks: bookmarksReducer,
+    wallet: walletReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

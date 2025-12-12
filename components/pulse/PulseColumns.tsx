@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useAppSelector } from '@/store';
 import { Column } from './Column';
+import { GridView } from './GridView';
 import { TokenData, ColumnType } from '@/types';
 import { cn } from '@/lib/utils';
 import { TokenDetailModal } from '@/components/pulse/TokenDetailModal';
@@ -26,10 +27,18 @@ export const PulseColumns: React.FC<PulseColumnsProps> = ({ onTokenClick }) => {
   const migrated = useAppSelector((state) => state.pulseFeed.migrated);
   const isLoading = useAppSelector((state) => state.pulseFeed.isLoading);
   const displaySettings = useAppSelector((state) => state.display);
+  const bookmarkedTokenIds = useAppSelector((state) => state.bookmarks.bookmarkedTokenIds);
+  const viewMode = useAppSelector((state) => state.display.settings.viewMode);
+  const showBookmarkedOnly = useAppSelector((state) => state.display.settings.showBookmarkedOnly);
 
   // Filter tokens based on display settings
   const filterTokens = (tokens: TokenData[]): TokenData[] => {
     return tokens.filter(token => {
+      // Bookmark filter
+      if (showBookmarkedOnly && !bookmarkedTokenIds.includes(token.id)) {
+        return false;
+      }
+
       // Market Cap filter
       if (displaySettings.settings.marketCapFilter.enabled) {
         const { min, max } = displaySettings.settings.marketCapFilter;
@@ -81,6 +90,13 @@ export const PulseColumns: React.FC<PulseColumnsProps> = ({ onTokenClick }) => {
     displaySettings.settings.visibleColumns.includes(column.id)
   );
 
+  // Combine all tokens for grid view
+  const allTokens = [
+    ...filterTokens(newPairs),
+    ...filterTokens(finalStretch),
+    ...filterTokens(migrated)
+  ];
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -94,6 +110,27 @@ export const PulseColumns: React.FC<PulseColumnsProps> = ({ onTokenClick }) => {
       </div>
     );
   }
+
+  // Grid View Mode
+  if (viewMode === 'grid') {
+    return (
+      <>
+        <GridView tokens={allTokens} onTokenClick={handleTokenClick} />
+        
+        {/* Token Detail Modal */}
+        <TokenDetailModal
+          token={selectedToken}
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedToken(null);
+          }}
+        />
+      </>
+    );
+  }
+
+  // Column View Mode (default)
 
   return (
     <>

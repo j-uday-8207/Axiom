@@ -37,6 +37,10 @@ export interface DisplaySettings {
   quickBuyBehavior: QuickBuyBehavior;
   secondQuickBuyButton: boolean;
   walletGroupsInHeader: boolean;
+  
+  // View Mode
+  viewMode: 'column' | 'grid';
+  showBookmarkedOnly: boolean;
 }
 
 interface DisplayState {
@@ -62,6 +66,8 @@ const initialState: DisplayState = {
     quickBuyBehavior: 'nothing',
     secondQuickBuyButton: false,
     walletGroupsInHeader: true,
+    viewMode: 'column',
+    showBookmarkedOnly: false,
   },
 };
 
@@ -86,10 +92,13 @@ const displaySlice = createSlice({
     },
     toggleLayoutOption: (
       state,
-      action: PayloadAction<keyof Omit<DisplaySettings, 'mcSize' | 'quickBuyButtons' | 'theme' | 'marketCapFilter' | 'volumeFilter' | 'holdersFilter' | 'visibleColumns' | 'quickBuyBehavior'>>
+      action: PayloadAction<keyof Omit<DisplaySettings, 'mcSize' | 'quickBuyButtons' | 'theme' | 'marketCapFilter' | 'volumeFilter' | 'holdersFilter' | 'visibleColumns' | 'quickBuyBehavior' | 'viewMode' | 'showBookmarkedOnly'>>
     ) => {
       const option = action.payload;
-      state.settings[option] = !state.settings[option] as any;
+      const currentValue = state.settings[option];
+      if (typeof currentValue === 'boolean') {
+        (state.settings[option] as boolean) = !currentValue;
+      }
     },
     updateMetricFilter: (
       state,
@@ -115,6 +124,12 @@ const displaySlice = createSlice({
     resetDisplaySettings: (state) => {
       state.settings = initialState.settings;
     },
+    setViewMode: (state, action: PayloadAction<'column' | 'grid'>) => {
+      state.settings.viewMode = action.payload;
+    },
+    toggleShowBookmarkedOnly: (state) => {
+      state.settings.showBookmarkedOnly = !state.settings.showBookmarkedOnly;
+    },
   },
 });
 
@@ -127,6 +142,8 @@ export const {
   updateQuickBuyBehavior,
   toggleColumn,
   resetDisplaySettings,
+  setViewMode,
+  toggleShowBookmarkedOnly,
 } = displaySlice.actions;
 
 export default displaySlice.reducer;
