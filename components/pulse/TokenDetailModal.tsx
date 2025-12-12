@@ -220,9 +220,24 @@ export const TokenDetailModal: React.FC<TokenDetailModalProps> = ({
       <DialogContent className="max-w-[98vw] max-h-[98vh] overflow-hidden bg-[#0a0d12] border-slate-800 p-0">
         {/* Top Header */}
         <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
+          {/* Back Button */}
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-slate-800 rounded-lg transition-colors group"
+            title="Close"
+          >
+            <svg
+              className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+          </button>
+
           {/* Left: Token Info */}
-          <div className="flex items-center gap-4">
-            {imageError ? (
+          <div className="flex items-center gap-4 flex-1 ml-4">{imageError ? (
               <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
                 {token.ticker.charAt(0)}
               </div>
@@ -325,6 +340,15 @@ export const TokenDetailModal: React.FC<TokenDetailModalProps> = ({
             <button className="p-2 hover:bg-slate-800 rounded transition-colors">
               <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-slate-800 rounded transition-colors text-gray-400 hover:text-white"
+              title="Close"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
