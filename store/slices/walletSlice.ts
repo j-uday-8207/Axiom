@@ -30,8 +30,11 @@ const walletSlice = createSlice({
     addFunds: (state, action: PayloadAction<number>) => {
       state.solBalance += action.payload;
     },
+    deductFunds: (state, action: PayloadAction<number>) => {
+      state.solBalance = Math.max(0, state.solBalance - action.payload);
+    },
   },
 });
 
-export const { updateBalance, connectWallet, disconnectWallet, addFunds } = walletSlice.actions;
+export const { updateBalance, connectWallet, disconnectWallet, addFunds, deductFunds } = walletSlice.actions;
 export default walletSlice.reducer;

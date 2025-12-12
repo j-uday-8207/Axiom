@@ -30,6 +30,10 @@ import {
   generateMockTrades,
   type CandlestickData,
 } from '@/lib/chartData';
+import { useAppSelector, useAppDispatch } from '@/store';
+import { buyToken, sellToken } from '@/store/slices/portfolioSlice';
+import { deductFunds, addFunds } from '@/store/slices/walletSlice';
+import { toast } from '@/hooks/use-toast';
 
 interface TokenDetailModalProps {
   token: TokenData | null;
@@ -46,6 +50,7 @@ export const TokenDetailModal: React.FC<TokenDetailModalProps> = ({
   isOpen,
   onClose,
 }) => {
+  const dispatch = useAppDispatch();
   const [tradeTab, setTradeTab] = useState<TradeTab>('market');
   const [viewTab, setViewTab] = useState<ViewTab>('positions');
   const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
@@ -54,6 +59,10 @@ export const TokenDetailModal: React.FC<TokenDetailModalProps> = ({
   const [chartData, setChartData] = useState<CandlestickData[]>([]);
   const [priceFlash, setPriceFlash] = useState<'up' | 'down' | null>(null);
   const [imageError, setImageError] = useState(false);
+
+  // Redux selectors
+  const solBalance = useAppSelector((state) => state.wallet.solBalance);
+  const position = useAppSelector((state) => token ? state.portfolio.positions[token.id] : null);
 
   // Initialize chart data
   useEffect(() => {
@@ -110,14 +119,91 @@ export const TokenDetailModal: React.FC<TokenDetailModalProps> = ({
 
   const holders = useMemo(() => generateMockHolders(10), []);
   const trades = useMemo(() => generateMockTrades(20), []);
+  const presetAmounts = ['0.1', '0.5', '1.0', '5.0'];
+
+  // Buy/Sell Handlers
+  const handleTrade = () => {
+    if (!token) return;
+
+    const qty = parseFloat(amount);
+    if (isNaN(qty) || qty <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid amount",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const priceInSOL = token.marketCap / 1000;
+
+    if (tradeType === 'buy') {
+      const totalCost = qty * priceInSOL;
+      
+      if (totalCost > solBalance) {
+        toast({
+          title: "Insufficient Balance",
+          description: `You need ${totalCost.toFixed(4)} SOL but only have ${solBalance.toFixed(4)} SOL`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      dispatch(deductFunds(totalCost));
+      dispatch(buyToken({
+        tokenId: token.id,
+        tokenName: token.name,
+        tokenTicker: token.ticker,
+        quantity: qty,
+        pricePerToken: priceInSOL,
+        imageUrl: token.imageUrl,
+      }));
+
+      toast({
+        title: "Purchase Successful",
+        description: `Bought ${qty} ${token.ticker} for ${totalCost.toFixed(4)} SOL`,
+        variant: "success",
+      });
+    } else {
+      if (!position || position.quantity < qty) {
+        toast({
+          title: "Insufficient Position",
+          description: `You only own ${position?.quantity || 0} ${token.ticker}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const saleValue = qty * priceInSOL;
+      
+      dispatch(addFunds(saleValue));
+      dispatch(sellToken({
+        tokenId: token.id,
+        quantity: qty,
+        pricePerToken: priceInSOL,
+      }));
+
+      toast({
+        title: "Sale Successful",
+        description: `Sold ${qty} ${token.ticker} for ${saleValue.toFixed(4)} SOL`,
+        variant: "success",
+      });
+    }
+
+    setAmount('');
+  };
+
+  const handleSellAll = () => {
+    if (!token || !position) return;
+    setTradeType('sell');
+    setAmount(position.quantity.toString());
+  };
 
   if (!token) return null;
 
   const copyAddress = () => {
     navigator.clipboard.writeText(token.id);
   };
-
-  const presetAmounts = ['0.01', '0.1', '1', '10'];
   
   // Use live chart data for current price if available
   const currentPrice = chartData.length > 0 
@@ -515,11 +601,13 @@ export const TokenDetailModal: React.FC<TokenDetailModalProps> = ({
 
               {/* Buy/Sell Button */}
               <button
+                onClick={handleTrade}
+                disabled={!amount || parseFloat(amount) <= 0}
                 className={cn(
                   'w-full py-4 rounded-lg font-bold text-lg transition-colors',
                   tradeType === 'buy'
-                    ? 'bg-success hover:bg-success/80 text-black'
-                    : 'bg-danger hover:bg-danger/80 text-white'
+                    ? 'bg-success hover:bg-success/80 text-black disabled:opacity-50 disabled:cursor-not-allowed'
+                    : 'bg-danger hover:bg-danger/80 text-white disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
               >
                 {tradeType === 'buy' ? `Buy ${token.ticker}` : `Sell ${token.ticker}`}
@@ -528,10 +616,17 @@ export const TokenDetailModal: React.FC<TokenDetailModalProps> = ({
               {/* Position Stats */}
               <div className="grid grid-cols-4 gap-2 pt-3 border-t border-slate-800">
                 {[
-                  { label: 'Bought', value: '0', sublabel: '≣', color: 'text-info' },
-                  { label: 'Sold', value: '0', sublabel: '≣', color: 'text-white' },
-                  { label: 'Holding', value: '0', sublabel: '≣', color: 'text-white' },
-                  { label: 'PnL', value: '+0 (+0%)', sublabel: '⊙', color: 'text-success' },
+                  { label: 'Balance', value: `${solBalance.toFixed(2)} SOL`, sublabel: '≣', color: 'text-info' },
+                  { label: 'Owned', value: position ? position.quantity.toString() : '0', sublabel: '≣', color: 'text-white' },
+                  { label: 'Value', value: position ? `${(position.quantity * position.currentPrice).toFixed(4)} SOL` : '0', sublabel: '≣', color: 'text-white' },
+                  { 
+                    label: 'PnL', 
+                    value: position 
+                      ? `${((position.quantity * position.currentPrice - position.totalInvested) >= 0 ? '+' : '')}${(position.quantity * position.currentPrice - position.totalInvested).toFixed(4)}`
+                      : '0',
+                    sublabel: '⊙', 
+                    color: position && (position.quantity * position.currentPrice - position.totalInvested) >= 0 ? 'text-success' : 'text-danger'
+                  },
                 ].map((stat, i) => (
                   <div key={i} className="text-center">
                     <div className="text-[9px] text-gray-500 mb-0.5 flex items-center justify-center gap-1">
@@ -544,6 +639,16 @@ export const TokenDetailModal: React.FC<TokenDetailModalProps> = ({
                   </div>
                 ))}
               </div>
+
+              {/* Sell All Button */}
+              {position && position.quantity > 0 && (
+                <button
+                  onClick={handleSellAll}
+                  className="w-full py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium text-white transition-colors"
+                >
+                  Sell All {position.quantity} {token.ticker}
+                </button>
+              )}
 
               {/* Presets */}
               <div className="flex items-center gap-2 pt-3 border-t border-slate-800">

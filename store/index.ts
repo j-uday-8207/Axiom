@@ -4,6 +4,7 @@ import pulseFeedReducer from './slices/pulseFeedSlice';
 import displayReducer from './slices/displaySlice';
 import bookmarksReducer from './slices/bookmarksSlice';
 import walletReducer from './slices/walletSlice';
+import portfolioReducer from './slices/portfolioSlice';
 
 export const store = configureStore({
   reducer: {
@@ -11,6 +12,7 @@ export const store = configureStore({
     display: displayReducer,
     bookmarks: bookmarksReducer,
     wallet: walletReducer,
+    portfolio: portfolioReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
